@@ -4,20 +4,25 @@ This project contains a PowerShell script to generate 224 folders, each with at 
 
 ## Usage
 
-1. Open PowerShell and navigate to this directory.
+1. Open PowerShell 7 or later and navigate to this directory.
 2. Run the script:
    ```powershell
    .\Generate-RandomFiles.ps1
    ```
    You can optionally specify parameters:
    ```powershell
-   .\Generate-RandomFiles.ps1 -FolderCount 224 -FilesPerFolder 1000 -MinFileSizeKB 4 -MaxFileSizeMB 128
+   .\Generate-RandomFiles.ps1 -FolderCount 224 -FilesPerFolder 1000 -MinFileSizeKB 4 -MaxFileSizeMB 128 -Parallelism 8
    ```
+   - `FolderCount`: Number of folders to create (default: 224)
+   - `FilesPerFolder`: Files per folder (default: 1000)
+   - `MinFileSizeKB`: Minimum file size in KB (default: 4)
+   - `MaxFileSizeMB`: Maximum file size in MB (default: 128)
+   - `Parallelism`: Number of parallel folder jobs (default: 8)
 3. The generated folders and files will be in the `output` directory.
 
 ## Requirements
-- PowerShell 5.1 or later (Windows, or PowerShell Core on macOS/Linux)
+- PowerShell 7.0 or later (ForEach-Object -Parallel is used for multi-threading)
 
 ## Notes
-- This script may take significant time and disk space due to the large number and size of files generated.
-- Adjust parameters as needed to fit your system's capabilities.
+- This script uses multi-threading for faster execution via ForEach-Object -Parallel. Adjust the `-Parallelism` parameter based on your system's CPU and memory.
+- The script may take significant time and disk space due to the large number and size of files generated. Adjust parameters as needed to fit your system's capabilities.

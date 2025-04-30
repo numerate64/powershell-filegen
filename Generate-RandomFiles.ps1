@@ -4,22 +4,30 @@ param(
     [int]$FolderCount = 224,
     [int]$FilesPerFolder = 1000,
     [int]$MinFileSizeKB = 4,      # Minimum file size in KB
-    [int]$MaxFileSizeMB = 128     # Maximum file size in MB
+    [int]$MaxFileSizeMB = 128,    # Maximum file size in MB
+    [int]$Parallelism = 8         # Number of parallel folder jobs
 )
+
+if ($PSVersionTable.PSVersion.Major -lt 7) {
+    Write-Error "This script requires PowerShell 7.0 or later for parallel processing."
+    exit 1
+}
 
 $BasePath = Join-Path -Path $PSScriptRoot -ChildPath "output"
 
-# Helper function to generate a random string for folder/file names
 function Get-RandomString($length = 8) {
     -join ((65..90) + (97..122) | Get-Random -Count $length | ForEach-Object {[char]$_})
 }
 
-# Create base output directory
 if (!(Test-Path $BasePath)) {
     New-Item -ItemType Directory -Path $BasePath | Out-Null
 }
 
-for ($i = 1; $i -le $FolderCount; $i++) {
+1..$FolderCount | ForEach-Object -Parallel {
+    param($i, $FilesPerFolder, $MinFileSizeKB, $MaxFileSizeMB, $BasePath)
+    function Get-RandomString($length = 8) {
+        -join ((65..90) + (97..122) | Get-Random -Count $length | ForEach-Object {[char]$_})
+    }
     $folderName = Get-RandomString 12
     $folderPath = Join-Path $BasePath $folderName
     New-Item -ItemType Directory -Path $folderPath | Out-Null
@@ -34,6 +42,6 @@ for ($i = 1; $i -le $FolderCount; $i++) {
         [IO.File]::WriteAllBytes($filePath, $buffer)
     }
     Write-Host "  -> Created $FilesPerFolder files in $folderName"
-}
+} -ArgumentList $_, $FilesPerFolder, $MinFileSizeKB, $MaxFileSizeMB, $BasePath -ThrottleLimit $Parallelism
 
-Write-Host "Done! Created $FolderCount folders, each with $FilesPerFolder files of random sizes between $MinFileSizeKB KB and $MaxFileSizeMB MB."
+Write-Host "Done! Created $FolderCount folders, each with $FilesPerFolder files of random sizes between $MinFileSizeKB KB and $MaxFileSizeMB MB, using $Parallelism parallel jobs."
