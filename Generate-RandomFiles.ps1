@@ -23,25 +23,45 @@ if (!(Test-Path $BasePath)) {
     New-Item -ItemType Directory -Path $BasePath | Out-Null
 }
 
-1..$FolderCount | ForEach-Object -Parallel {
-    param($i, $FilesPerFolder, $MinFileSizeKB, $MaxFileSizeMB, $BasePath)
+Write-Host "Starting generation of $FolderCount folders, each with $FilesPerFolder files (sizes: $MinFileSizeKB KB to $MaxFileSizeMB MB) using $Parallelism parallel jobs..."
+$startTime = Get-Date
+
+$indices = 1..$FolderCount
+$results = $indices | ForEach-Object -Parallel {
+    param($i)
     function Get-RandomString($length = 8) {
         -join ((65..90) + (97..122) | Get-Random -Count $length | ForEach-Object {[char]$_})
     }
     $folderName = Get-RandomString 12
-    $folderPath = Join-Path $BasePath $folderName
+    $folderPath = Join-Path $using:BasePath $folderName
     New-Item -ItemType Directory -Path $folderPath | Out-Null
-    Write-Host "Created folder: $folderPath"
+    $filesCreated = 0
+    $bytesWritten = 0
 
-    for ($j = 1; $j -le $FilesPerFolder; $j++) {
+    for ($j = 1; $j -le $using:FilesPerFolder; $j++) {
         $fileName = (Get-RandomString 10) + ".txt"
         $filePath = Join-Path $folderPath $fileName
-        $fileSizeKB = Get-Random -Minimum $MinFileSizeKB -Maximum ($MaxFileSizeMB * 1024)
+        $fileSizeKB = Get-Random -Minimum $using:MinFileSizeKB -Maximum ($using:MaxFileSizeMB * 1024)
         $buffer = New-Object byte[] ($fileSizeKB * 1024)
         [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($buffer)
         [IO.File]::WriteAllBytes($filePath, $buffer)
+        $filesCreated++
+        $bytesWritten += ($fileSizeKB * 1024)
+        if ($j % 100 -eq 0) {
+            Write-Host "[$folderName] $filesCreated/$using:FilesPerFolder files created..."
+        }
     }
-    Write-Host "  -> Created $FilesPerFolder files in $folderName"
-} -ArgumentList $_, $FilesPerFolder, $MinFileSizeKB, $MaxFileSizeMB, $BasePath -ThrottleLimit $Parallelism
+    Write-Host "[$folderName] Completed: $filesCreated files, $([math]::Round($bytesWritten/1MB,2)) MB written."
+    [PSCustomObject]@{Folder=$folderName; Files=$filesCreated; Bytes=$bytesWritten}
+} -ThrottleLimit $Parallelism
 
-Write-Host "Done! Created $FolderCount folders, each with $FilesPerFolder files of random sizes between $MinFileSizeKB KB and $MaxFileSizeMB MB, using $Parallelism parallel jobs."
+$endTime = Get-Date
+$totalFiles = ($results | Measure-Object -Property Files -Sum).Sum
+$totalBytes = ($results | Measure-Object -Property Bytes -Sum).Sum
+$duration = $endTime - $startTime
+Write-Host "\nSummary:"
+Write-Host "  Total folders: $FolderCount"
+Write-Host "  Total files: $totalFiles"
+Write-Host "  Total size: $([math]::Round($totalBytes/1GB,2)) GB ($([math]::Round($totalBytes/1MB,2)) MB)"
+Write-Host "  Time elapsed: $($duration.ToString())"
+Write-Host "Done!"
