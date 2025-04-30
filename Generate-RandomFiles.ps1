@@ -1,12 +1,30 @@
 # PowerShell script to generate random folders and files of varying sizes
 
 param(
-    [int]$FolderCount = 224,
-    [int]$FilesPerFolder = 1000,
-    [int]$MinFileSizeKB = 4,      # Minimum file size in KB
-    [int]$MaxFileSizeMB = 128,    # Maximum file size in MB
-    [int]$Parallelism = 64        # Number of parallel folder jobs
+    [Parameter(HelpMessage = "Number of folders to create (default: 10)")]
+    [int]$FolderCount = 10,
+    [Parameter(HelpMessage = "Files per folder (default: 10)")]
+    [int]$FilesPerFolder = 10,
+    [Parameter(HelpMessage = "Minimum file size in KB (default: 4)")]
+    [int]$MinFileSizeKB = 4,
+    [Parameter(HelpMessage = "Maximum file size in MB (default: 0.125, i.e., 128KB)")]
+    [double]$MaxFileSizeMB = 0.125,
+    [Parameter(HelpMessage = "Number of parallel folder jobs (default: 64)")]
+    [int]$Parallelism = 64
 )
+
+if ($PSBoundParameters.ContainsKey('help') -or $PSBoundParameters.ContainsKey('?')) {
+    Write-Host "\nUsage:"
+    Write-Host "  ./Generate-RandomFiles.ps1 [-FolderCount <int>] [-FilesPerFolder <int>] [-MinFileSizeKB <int>] [-MaxFileSizeMB <double>] [-Parallelism <int>] [-help|-?]"
+    Write-Host "\nParameters:"
+    Write-Host "  -FolderCount      Number of folders to create (default: 10)"
+    Write-Host "  -FilesPerFolder   Files per folder (default: 10)"
+    Write-Host "  -MinFileSizeKB    Minimum file size in KB (default: 4)"
+    Write-Host "  -MaxFileSizeMB    Maximum file size in MB (default: 0.125, i.e., 128KB)"
+    Write-Host "  -Parallelism      Number of parallel folder jobs (default: 64)"
+    Write-Host "  -help, -?         Show this help message"
+    exit 0
+}
 
 if ($PSVersionTable.PSVersion.Major -lt 7) {
     Write-Error "This script requires PowerShell 7.0 or later for parallel processing."

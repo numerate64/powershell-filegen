@@ -1,6 +1,6 @@
 # PowerShell File Generator
 
-This project contains a PowerShell script to generate a specified number of folders, each with a specified number of text files of random sizes between 4KB and 128MB. Each folder and file has a random name, and files are filled with random data.
+This project contains a PowerShell script to generate a specified number of folders, each with a specified number of text files of random sizes between 4KB and 128KB. Each folder and file has a random name, and files are filled with random data.
 
 ## Usage
 
@@ -11,20 +11,28 @@ This project contains a PowerShell script to generate a specified number of fold
    ```
    You can optionally specify parameters:
    ```powershell
-   ./Generate-RandomFiles.ps1 -FolderCount 224 -FilesPerFolder 1000 -MinFileSizeKB 4 -MaxFileSizeMB 128 -Parallelism 64
+   ./Generate-RandomFiles.ps1 -FolderCount 10 -FilesPerFolder 10 -MinFileSizeKB 4 -MaxFileSizeMB 0.125 -Parallelism 64
    ```
-   - `-FolderCount`: Number of folders to create (default: 224)
-   - `-FilesPerFolder`: Files per folder (default: 1000)
+   - `-FolderCount`: Number of folders to create (default: 10)
+   - `-FilesPerFolder`: Files per folder (default: 10)
    - `-MinFileSizeKB`: Minimum file size in KB (default: 4)
-   - `-MaxFileSizeMB`: Maximum file size in MB (default: 128)
+   - `-MaxFileSizeMB`: Maximum file size in MB (default: 0.125, i.e., 128KB)
    - `-Parallelism`: Number of parallel folder jobs (default: 64)
+   - `-help`, `-?`: Show help/usage information
 3. The generated folders and files will be in the `files` directory.
+
+## Help / Usage
+
+You can view usage information at any time:
+```powershell
+./Generate-RandomFiles.ps1 -help
+```
 
 ## Output Details
 
 - As the script runs, it prints a message for each folder when it completes, and any errors encountered are displayed in red.
   ```
-  [FolderName] Completed: 10 files (added 3), 540.19 MB written. Errors: 0
+  [FolderName] Completed: 10 files (added 3), 12.19 MB written. Errors: 0
   Error writing C:\path\to\file.txt: [error details]
   ```
 - At the end, a summary is displayed:
@@ -32,7 +40,7 @@ This project contains a PowerShell script to generate a specified number of fold
   Summary:
     Total folders: 10
     Total files: 100
-    Total size: 5.79 GB (5925.92 MB)
+    Total size: 1.19 GB (1219.92 MB)
     Total errors: 0
     Time elapsed: 00:00:02.92
   Done!
