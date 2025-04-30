@@ -7,20 +7,20 @@ param(
     [int]$FilesPerFolder = 10,
     [Parameter(HelpMessage = "Minimum file size in KB (default: 4)")]
     [int]$MinFileSizeKB = 4,
-    [Parameter(HelpMessage = "Maximum file size in MB (default: 0.125, i.e., 128KB)")]
-    [double]$MaxFileSizeMB = 0.125,
+    [Parameter(HelpMessage = "Maximum file size in KB (default: 128)")]
+    [int]$MaxFileSizeKB = 128,
     [Parameter(HelpMessage = "Number of parallel folder jobs (default: 64)")]
     [int]$Parallelism = 64
 )
 
 if ($PSBoundParameters.ContainsKey('help') -or $PSBoundParameters.ContainsKey('?')) {
     Write-Host "\nUsage:"
-    Write-Host "  ./Generate-RandomFiles.ps1 [-FolderCount <int>] [-FilesPerFolder <int>] [-MinFileSizeKB <int>] [-MaxFileSizeMB <double>] [-Parallelism <int>] [-help|-?]"
+    Write-Host "  ./Generate-RandomFiles.ps1 [-FolderCount <int>] [-FilesPerFolder <int>] [-MinFileSizeKB <int>] [-MaxFileSizeKB <int>] [-Parallelism <int>] [-help|-?]"
     Write-Host "\nParameters:"
     Write-Host "  -FolderCount      Number of folders to create (default: 10)"
     Write-Host "  -FilesPerFolder   Files per folder (default: 10)"
     Write-Host "  -MinFileSizeKB    Minimum file size in KB (default: 4)"
-    Write-Host "  -MaxFileSizeMB    Maximum file size in MB (default: 0.125, i.e., 128KB)"
+    Write-Host "  -MaxFileSizeKB    Maximum file size in KB (default: 128)"
     Write-Host "  -Parallelism      Number of parallel folder jobs (default: 64)"
     Write-Host "  -help, -?         Show this help message"
     exit 0
@@ -41,7 +41,7 @@ if (!(Test-Path $BasePath)) {
     New-Item -ItemType Directory -Path $BasePath | Out-Null
 }
 
-Write-Host "Starting (resumable) generation of $FolderCount folders, each with $FilesPerFolder files (sizes: $MinFileSizeKB KB to $MaxFileSizeMB MB) using $Parallelism parallel jobs..."
+Write-Host "Starting (resumable) generation of $FolderCount folders, each with $FilesPerFolder files (sizes: $MinFileSizeKB KB to $MaxFileSizeKB KB) using $Parallelism parallel jobs..."
 $startTime = Get-Date
 
 # Get or create folder names for resumability
@@ -78,7 +78,7 @@ $results = $folderNames | ForEach-Object -Parallel {
         $fileName = (Get-RandomString 10) + ".txt"
         while ($existingFiles -contains $fileName) { $fileName = (Get-RandomString 10) + ".txt" }
         $filePath = Join-Path $folderPath $fileName
-        $fileSizeKB = Get-Random -Minimum $using:MinFileSizeKB -Maximum ($using:MaxFileSizeMB * 1024)
+        $fileSizeKB = Get-Random -Minimum $using:MinFileSizeKB -Maximum $using:MaxFileSizeKB
         try {
             $buffer = New-Object byte[] ($fileSizeKB * 1024)
             [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($buffer)

@@ -11,12 +11,12 @@ This project contains a PowerShell script to generate a specified number of fold
    ```
    You can optionally specify parameters:
    ```powershell
-   ./Generate-RandomFiles.ps1 -FolderCount 10 -FilesPerFolder 10 -MinFileSizeKB 4 -MaxFileSizeMB 0.125 -Parallelism 64
+   ./Generate-RandomFiles.ps1 -FolderCount 10 -FilesPerFolder 10 -MinFileSizeKB 4 -MaxFileSizeKB 128 -Parallelism 64
    ```
    - `-FolderCount`: Number of folders to create (default: 10)
    - `-FilesPerFolder`: Files per folder (default: 10)
    - `-MinFileSizeKB`: Minimum file size in KB (default: 4)
-   - `-MaxFileSizeMB`: Maximum file size in MB (default: 0.125, i.e., 128KB)
+   - `-MaxFileSizeKB`: Maximum file size in KB (default: 128)
    - `-Parallelism`: Number of parallel folder jobs (default: 64)
    - `-help`, `-?`: Show help/usage information
 3. The generated folders and files will be in the `files` directory.
