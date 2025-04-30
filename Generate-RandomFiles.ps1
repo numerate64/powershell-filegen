@@ -37,8 +37,8 @@ function Get-RandomString($length = 12) {
     -join ((65..90) + (97..122) | Get-Random -Count $length | ForEach-Object {[char]$_})
 }
 
-if (!(Test-Path $BasePath)) {
-    New-Item -ItemType Directory -Path $BasePath | Out-Null
+if (!(Test-Path -Path $BasePath -PathType Container)) {
+    New-Item -Path $BasePath -ItemType Directory | Out-Null
 }
 
 Write-Host "Starting (resumable) generation of $FolderCount folders, each with $FilesPerFolder files (sizes: $MinFileSizeKB KB to $MaxFileSizeKB KB) using $Parallelism parallel jobs..."
@@ -46,7 +46,7 @@ $startTime = Get-Date
 
 # Get or create folder names for resumability
 $folderNames = @()
-if (Test-Path $BasePath) {
+if (Test-Path -Path $BasePath -PathType Container) {
     $existingFolders = Get-ChildItem -Path $BasePath -Directory | ForEach-Object { $_.Name }
     $folderNames += $existingFolders
 }
@@ -58,40 +58,52 @@ while ($folderNames.Count -lt $FolderCount) {
 }
 $folderNames = $folderNames[0..($FolderCount-1)]
 
-$results = $folderNames | ForEach-Object -Parallel {
-    param($folderName)
-    function Get-RandomString($length = 10) {
-        -join ((65..90) + (97..122) | Get-Random -Count $length | ForEach-Object {[char]$_})
-    }
-    $folderPath = Join-Path $using:BasePath $folderName
-    if (!(Test-Path $folderPath)) {
-        New-Item -ItemType Directory -Path $folderPath | Out-Null
-    }
-    $existingFiles = @()
-    if (Test-Path $folderPath) {
-        $existingFiles = Get-ChildItem -Path $folderPath -File | ForEach-Object { $_.Name }
-    }
-    $filesCreated = $existingFiles.Count
-    $bytesWritten = 0
-    $errorCount = 0
-    for ($j = $filesCreated + 1; $j -le $using:FilesPerFolder; $j++) {
-        $fileName = (Get-RandomString 10) + ".txt"
-        while ($existingFiles -contains $fileName) { $fileName = (Get-RandomString 10) + ".txt" }
-        $filePath = Join-Path $folderPath $fileName
-        $fileSizeKB = Get-Random -Minimum $using:MinFileSizeKB -Maximum $using:MaxFileSizeKB
-        try {
-            $buffer = New-Object byte[] ($fileSizeKB * 1024)
-            [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($buffer)
-            [IO.File]::WriteAllBytes($filePath, $buffer)
-            $bytesWritten += ($fileSizeKB * 1024)
-        } catch {
-            Write-Host "Error writing $filePath: $_" -ForegroundColor Red
-            $errorCount++
+Write-Host "[DEBUG] Folder names to be created: $($folderNames -join ', ')"
+
+$results = foreach ($folderName in $folderNames) {
+    & {
+        param($folderName)
+        function Get-RandomString($length = 10) {
+            -join ((65..90) + (97..122) | Get-Random -Count $length | ForEach-Object {[char]$_})
         }
-    }
-    Write-Host "[$folderName] Completed: $using:FilesPerFolder files (added $($using:FilesPerFolder - $filesCreated)), $([math]::Round($bytesWritten/1MB,2)) MB written. Errors: $errorCount"
-    [PSCustomObject]@{Folder=$folderName; Files=$using:FilesPerFolder; Bytes=$bytesWritten; Errors=$errorCount}
-} -ThrottleLimit $Parallelism
+        # Use variables directly (no $using: needed)
+        Write-Host "[DEBUG] Processing folderName: '$folderName'"
+        $folderPath = Join-Path -Path $BasePath -ChildPath $folderName
+
+        $null = New-Item -Path $folderPath -ItemType Directory -Force -ErrorAction SilentlyContinue
+        if (!(Test-Path -Path $folderPath -PathType Container)) {
+            Write-Host "[ERROR] Failed to create folder: $folderPath" -ForegroundColor Red
+            return
+        } else {
+            Write-Host "[DEBUG] Created/ensured folder: $folderPath"
+        }
+
+        $existingFiles = @()
+        if (Test-Path -Path $folderPath -PathType Container) {
+            $existingFiles = Get-ChildItem -Path $folderPath -File | ForEach-Object { $_.Name }
+        }
+        $filesCreated = $existingFiles.Count
+        $bytesWritten = 0
+        $errorCount = 0
+        for ($j = $filesCreated + 1; $j -le $FilesPerFolder; $j++) {
+            $fileName = (Get-RandomString 10) + ".txt"
+            while ($existingFiles -contains $fileName) { $fileName = (Get-RandomString 10) + ".txt" }
+            $filePath = Join-Path -Path $folderPath -ChildPath $fileName
+            $fileSizeKB = Get-Random -Minimum $MinFileSizeKB -Maximum $MaxFileSizeKB
+            try {
+                $buffer = New-Object byte[] ($fileSizeKB * 1024)
+                [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($buffer)
+                [IO.File]::WriteAllBytes($filePath, $buffer)
+                $bytesWritten += ($fileSizeKB * 1024)
+            } catch {
+                Write-Host ("Error writing ${filePath}: $_") -ForegroundColor Red
+                $errorCount++
+            }
+        }
+        Write-Host "[$folderName] Completed: $FilesPerFolder files (added $($FilesPerFolder - $filesCreated)), $([math]::Round($bytesWritten/1MB,2)) MB written. Errors: $errorCount"
+        [PSCustomObject]@{Folder=$folderName; Files=$FilesPerFolder; Bytes=$bytesWritten; Errors=$errorCount}
+    } $folderName
+}
 
 $endTime = Get-Date
 $totalFiles = $results.Count * $FilesPerFolder
