@@ -20,6 +20,23 @@ This project contains a PowerShell script to generate 224 folders, each with at 
    - `Parallelism`: Number of parallel folder jobs (default: 8)
 3. The generated folders and files will be in the `output` directory.
 
+## Output Details
+
+- As the script runs, it prints a progress message for each folder when it completes:
+  ```
+  [FolderName] Completed: 10 files, 540.19 MB written.
+  ```
+- At the end, a summary is displayed:
+  ```
+  Summary:
+    Total folders: 10
+    Total files: 100
+    Total size: 5.79 GB (5925.92 MB)
+    Time elapsed: 00:00:02.9236890
+  Done!
+  ```
+- Output from folders may appear in any order due to parallel execution.
+
 ## Requirements
 - PowerShell 7.0 or later (ForEach-Object -Parallel is used for multi-threading)
 
