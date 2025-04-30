@@ -5,7 +5,7 @@ param(
     [int]$FilesPerFolder = 1000,
     [int]$MinFileSizeKB = 4,      # Minimum file size in KB
     [int]$MaxFileSizeMB = 128,    # Maximum file size in MB
-    [int]$Parallelism = 8         # Number of parallel folder jobs
+    [int]$Parallelism = 64        # Number of parallel folder jobs
 )
 
 if ($PSVersionTable.PSVersion.Major -lt 7) {
@@ -13,7 +13,7 @@ if ($PSVersionTable.PSVersion.Major -lt 7) {
     exit 1
 }
 
-$BasePath = Join-Path -Path $PSScriptRoot -ChildPath "output"
+$BasePath = Join-Path -Path $PSScriptRoot -ChildPath "files"
 
 function Get-RandomString($length = 8) {
     -join ((65..90) + (97..122) | Get-Random -Count $length | ForEach-Object {[char]$_})
